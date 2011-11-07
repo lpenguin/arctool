@@ -1,0 +1,23 @@
+[
+	{ "name" : "Idpz", 
+	  "avg_type" : "n",
+	  "format" : "%e",
+	  "units" : "",
+	  "index1":"1:7",
+	  "index2":"1:64"},
+	{ "name" : "SED", 
+	  "avg_type" : "n",
+	  "format" : "%e",
+	  "units" : "",
+	  "index1":"1:7",
+	  "index2":"1:64"},
+	{ "name" : "Nakz", 
+	  "avg_type" : "n",
+	  "format" : "%e",
+	  "units" : ""},
+	{ "name" : "Ndpz", 
+	  "avg_type" : "n",
+	  "format" : "%e",
+	  "units" : ""}
+]
+

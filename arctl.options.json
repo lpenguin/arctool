@@ -1,0 +1,187 @@
+[{
+     "shortName" : "v",
+     "bool" : "1",
+     "description" : "Set verbose mode"
+},{
+    "name" :"passport",
+    "altNames" : ["pst"],
+    "bool" :"1",
+    "description" :"Passport mode"
+},{
+	"name" : "time-progress",
+    "shortName" :"t",
+    "bool" :"1",
+    "description" :"Format as time mode"  
+},{
+    "name" :"step",
+    "shortName" :"s",
+    "description" :"Step in seconds"  
+},{
+    "name" :"host",
+    "description" :"Database host name"
+},{
+    "name" :"dbname",
+    "description" :"Database name"
+},{
+    "name" :"user",
+    "description" :"Database user name"
+},{
+    "name" :"password",
+    "description" :"Database password"
+},{
+    "name" :"remote-server",
+    "shortName" :"r",
+    "description" :"Run ImGhort on remote server"  
+},{
+    "name" :"remote-user",
+    "description" :"User name on remote server"  
+},{
+    "name" :"create-sym-links",
+    "shortName" :"M",
+    "description" :"Create symlinks on data files",
+    "bool" :"1"  
+},{
+    "name" :"autogen",
+    "shortName" :"G",
+    "description" :"Generate constants automatically",
+    "bool" :"1"  
+},{
+    "name" :"dialog-say-yes",
+    "shortName" :"Y",
+    "description" :"Always answer yes on promt",
+    "bool" :"1"  
+},{
+    "name" :"begin-time",
+    "shortName" :"b",
+    "description" :"Extract begin time"  
+},{
+    "name" :"end-time",
+    "shortName" :"e",
+    "description" :"Extract end time"  
+},{
+    "name" :"camp",
+    "description" :"Set campaign"
+},{
+    "name" : "block",
+    "description" :"Set block"
+},{
+	"name" : "vars",
+	"altNames" : ["var"],
+    "shortName" :"p",
+    "description" :"Extracted parametr. Use following format \"<name>[|altName](<index1>[:<endIndex1>][;<index2>[:<endIndex2>]])\"",
+    "array" :"1"
+},{
+    "name" :"out-plugin",
+    "description" :"Use output plugin"
+},{
+    "name" :"average-mode",
+    "shortName" :"a",
+    "description" :"Set average mode",
+    "bool" :"1"
+},{
+    "name" :"layer-id-ms",
+    "altNames" : ["layer"],
+    "description" :"Set layer id"
+},{
+    "name" :"hole",
+    "description" :"Set maximum hole size"
+},{
+    "name" :"no-header",
+    "description" :"Ommit output header",
+    "bool" :"1"
+},{
+    "name" :"output-format",
+    "shortName" :"f",
+    "description" :"Set output format"
+},{
+    "name" :"merge-params",
+    "shortName" :"m",
+    "description" :"Merge output in one file",
+    "bool" :"1"
+},{
+    "name" :"user",
+    "description" :"Set database user"
+},{
+    "name" :"password",
+    "description" :"Set database password"
+},{
+    "name" :"debug",
+    "description" :"Set database debug mode",
+    "bool" :"1"
+},{
+    "name" :"input-file",
+	"altNames" : ["kks"],
+    "shortName" :"F",
+    "description" :"Set of kks in input file"
+},{
+    "name" :"input-json-file",
+    "shortName" :"J",
+    "description" :"Set params in input file in JSON format"
+},{
+    "name" :"disk",
+    "description" :"Set extraction disk"
+},{
+    "name" :"class",
+    "description" :"Set extraction class. For example ka3_04/oper/vk1"
+},{
+    "name" :"dost",
+    "description" :"Print dost in output",
+    "bool" :"1"
+},{
+    "name" :"packet-file",
+    "description" :"//NO DESCR"
+},{
+    "name" :"field",
+    "description" :"Print in field format",
+    "bool" :"1"
+},{
+    "name" :"node-type",
+    "description" :"Set node type"
+},{
+    "name" :"node-name",
+    "description" :"Set node name"
+},{
+    "name" :"close-stdout",
+    "description" :"Close stdout",
+	"bool" : "1"
+},{
+    "name" :"output-file",
+    "shortName" :"o",
+    "description" :"Set output file"
+},{
+    "name" :"silent",
+    "shortName" :"q",
+    "description" :"Run program quietly",
+	"bool" : "1"
+},{
+    "name" :"sun-arc",
+	"altNames" : ["sun"],
+    "description" :"Connect as sun archive, write info to db",
+	"bool" : "1"
+},{
+    "name" :"segment",
+	"altNames" : ["seg"],
+    "description" :"Segment name"
+},{
+    "name" :"print-reliability",
+	"altNames" : ["print-rel"],
+    "bool" : "1",
+    "description" :"Print relability"
+},{
+    "name" :"suppress-not-found-index-warnings",
+	"altNames" : ["suppress-warn"],
+    "bool" : "1",
+    "description" :"Print relability"
+},{
+    "name" :"sort-indexes",
+    "bool" : "1",
+    "description" :"Sort indexes at output"
+},{
+	"name" : "remove-bad-output",
+	"bool" : "1",
+	"description" : "removing useless last line, imghort bug"
+},{
+	"name" : "arc-location",
+	"shortName" : "L",
+	"description" : "Location of archive files"
+}]

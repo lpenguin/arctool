@@ -1,0 +1,13 @@
+[
+	{ "name" : "Hgr_suz", 
+	  "altnames" : ["f_Hgsuz"],
+	  "avg_type" : "n",
+	  "format" : "%e",
+	  "index1":"10"
+	},
+	{ "name" : "Cbor", 
+	  "altnames" : ["f_Cbor"],
+	  "avg_type" : "n",
+	  "format" : "%e"
+	}
+]

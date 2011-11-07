@@ -1,0 +1,25 @@
+# Block     : $block
+# Campaign  : $campaign
+# Step      : $step
+# Avg step  : $avg_step
+# Begin time: $begin_time
+# End time  : $end_time
+# Min teff  : $min_teff
+# Max teff  : $max_teff
+# Avg teff  : $avg_teff
+# Min Nakz  : $min_nakz
+# Max Nakz  : $max_nakz
+# Avg Nakz  : $avg_nakz
+# Data dens : $data_dens
+# Params    : $params
+# Units     : $units
+
+# Hole      : Skipped seconds before StartTime
+# Min/Max   : n - normal values, d - delta from avg, d% - delta from avg in persents
+# Step      : Extraction step in seconds
+# Avg step  : Average interval
+# Step out  : Step averaging in seconds
+# Locale    : Time locale
+# Format    : Default format in c-style
+# Dost_*    : Dostovernost'
+# Time locale: All times in Greenwich

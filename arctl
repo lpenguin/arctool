@@ -1,0 +1,493 @@
+#!/usr/bin/perl -s
+use strict;
+#use Getopt::Std;
+use FindBin;
+use File::Basename;
+use Cwd 'abs_path';
+use lib "$FindBin::Bin/";
+
+use ArcSvrk;
+use Misc;
+use ErrorHandler;
+use DbDbi;
+use Loggy;
+use TaskMan;
+use CmdLine;
+
+sub end(){
+	db_disconnect();
+	exit 0;
+}
+
+my $scriptDir = "$FindBin::Bin/";
+my $version = $ArcSvrk::VERSION;
+my $sun_server = 'sun-25.vver';
+
+my $legends = read_json($scriptDir."/arctl.legends.json");
+my $optionsJSON = read_json($scriptDir."/arctl.options.json");
+my $actionsJSON = read_json($scriptDir."/arctl.actions.json");
+
+my $cmdLine = newCmdLine({
+    name => 'arctl',
+    description => 'Archive data manipulation script. Usage: ./arctl <action> [<options>] [<arguments>] '
+});
+
+addOptions($cmdLine, @$optionsJSON);
+addActions($cmdLine, @$actionsJSON);
+setMainOptions( $cmdLine, 'host', 'dbname', 'name', 'user', 'password', 'remote-server', 'dialog-say-yes', 'silent' );
+setDefaultAction( $cmdLine, $cmdLine->{actions}->{usage});
+
+
+set_log_level(LOG_ALL);
+
+
+my $res;
+
+#База данных
+#db_init($FindBin::Bin.'/db/arc.db');#'kaponir', 'arba.vver', 'kaponir', 'kaponir123', DB_PGSQL);
+my %db_settings = (
+	dbname => 'kaponir_dev2', host => 'storage.vver', user => 'kaponir', password => 'kaponir123', dbtype => DB_PGSQL, debug => 0
+);
+
+
+$cmdLine = readCmdLine( $cmdLine );
+my $r = $cmdLine->{readed};
+if( $r->{options}->{silent} ){
+	set_log_level( LOG_ERRORS );
+}
+
+if( $r->{options}->{remote_user} ){
+	$ENV{USER} = $r->{options}->{remote_user};
+}
+
+
+%db_settings = merge_hashes_def( \%db_settings, $r->{options});
+#info d( $r );
+
+db_connect( %db_settings );   
+ArcInit( %{$r->{options}} );
+processCmdLine( $cmdLine );
+
+sub actionPrintVersion($@){
+	info "arctl $version";	
+	end;
+}
+
+sub actionPrintUsage($@){
+	my ($options, @args) = @_;
+	if( $options->{version} ){
+		actionPrintVersion(@_);	
+		return;
+	}
+	
+	printUsage( $cmdLine );
+	print "Examples:\n\n";
+	print "Get data from tw1_05 campaign from '2010.08.03 18:00:00' to '2010.08.03 19:00:00' with step 10s, params KQ(1:16;1:163), KV(1:163), server 'sun-25.vver':\n";
+	print "./arctl get --camp=tw1_05 -b='2010.08.03 18:00:00' -e='2010.08.03 19:00:00' -s=10 -p='KQ(1:16;1:163)' -p='KV(1:163)' -r=sun-25.vver\n\n";
+	print "Connect disk /mnt/arc/tw1_4, remote server sun-25.vver, mark as 'sun server':\n";
+	print "./arctl connect -r=sun-25.vver --sun disk /mnt/arc/tw1_4\n\n";
+	print "Disconnect disk /mnt/arc/tw1_4:\n";
+	print "./arctl disconnect disk /mnt/arc/tw1_4\n\n";
+	#print ""
+	end;
+}
+
+sub actionGet($@){
+    my ($options, @args) = @_;
+    
+    my %flags = %$options;
+    
+    if( $flags{input_file}){
+		my @vars = vars_from_kks_list( read_first_col($flags{input_file}) );
+		$flags{vars} = \@vars;
+		$flags{kks_mode} = 1;
+	}
+	if ($flags{input_json_file}){
+		$flags{vars} = read_json( $flags{input_json_file} );
+#		info dump_hash_ref( $flags{vars});
+	}
+	if( ! exists( $flags{end_time} ) ){
+		$flags{end_time} = $flags{begin_time};
+	}
+	if( $flags{passport} ){
+		$flags{tasks}= ArcVar('format_tasks');
+		$flags{average_mode} = 1;
+		$flags{merge_params} = 1;
+		ArcVar("remove_bad_output", 0);
+		#$flags{remove_bad_output} = 0;
+		$flags{legends} = $legends;
+		passport_disk( %flags );
+	}else{
+			$options = \%flags;
+			my $task = extract_data( $options, 1 );
+#			if( $flags{packet_output_file} ){
+#				$flags{output_file} = $c++.'.'.$flags{packet_output_file};
+#			}
+
+			my @formatted_files = format_output($task->{output_file}, $task->{params});
+			my ($formatted_file) = @formatted_files;
+			if( $flags{output_file} ){
+				my $outDir = $flags{output_file};
+				$outDir = dirname( $flags{output_file} ) unless( $flags{output_file} =~ m/\/$/);
+				system_run("mkdir -p $outDir ") unless( -d $outDir );	
+							
+				unless( @formatted_files > 1 ){
+					system_run("mv '$formatted_file' '$flags{output_file}'") or abort("cannot move $formatted_file to $flags{output_file}: $!");
+				}else{
+
+						
+					for my $file (@formatted_files){
+							
+						my $out = $outDir.'/'.basename($file);
+						system_run("mv '$file' '$out'") or abort("cannot move $file to $out: $!");
+					}
+				}
+
+			}else{
+				out(cat($formatted_file));
+			}
+			
+	}
+	end;
+}
+
+sub actionView($@){
+	my ($options, @args) = @_;
+	my %flags = %{$options};
+	
+	my $arg = shift @args;
+	if( $arg eq 'var' ) {
+		my $block = $flags{block};
+		my $block_id = db_get_id_by_name('e_block', $block) or abort("Block '$block' doesnot exists in base");
+		my $all_block_id = db_get_id_by_name('e_block', 'all') or abort("Block 'all' doesnot exists in base");
+
+		db_process("select v.name, v.cols, v.rows, v.layers from e_var v, r_var_for_block r where r.n_block in ($block_id, $all_block_id) and r.n_var=v.n_var order by name", sub{
+			my @row = @_;
+			info $row[0];
+		});
+		
+	}elsif($arg eq 'const'){
+		my $block = $flags{block};
+		my $block_id = db_get_id_by_name('e_block', $block) or abort("Block '$block' doesnot exists in base");
+		my $block_all_id = db_get_id_by_name('e_block', 'all') or abort("Block 'all' doesnot exists in base");
+		db_process(" select cv.name, cv.value, b.name from e_int_const_val cv, e_block b where (cv.n_block = $block_id or cv.n_block = $block_all_id ) and cv.n_block = b.n_block order by name", sub{
+			my @row = @_;
+			info "$row[0] = $row[1] ($row[2])";
+		});
+	}elsif($arg eq 'int'){
+		my $layer = $flags{layer_id_ms};
+		my $hole_length = $flags{hole} || 30;
+		my $layer_id = db_get_id_by_name('e_arc_layer', $layer, 'layer_id') or abort("Layer with id '$layer' doesnot exists in base");
+		my @intervals = get_layer_intervals($layer_id, $hole_length, $flags{begin_time}, $flags{end_time});
+		for my $int (@intervals){
+			info "$int->{begin_time}\t$int->{end_time}";
+		}
+	}elsif($arg eq 'holes'){
+		my $layer = $flags{layer_id_ms};
+		my $hole_length = $flags{hole} || 30;
+		my $layer_id = db_get_id_by_name('e_arc_layer', $layer, 'layer_id') or abort("Layer with id '$layer' doesnot exists in base");
+		my @holes = get_layer_holes($layer_id, $hole_length);
+		for my $hole (@holes){
+			my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =  localtime($hole->{length});
+            $year-=70;
+			($sec,$min,$hour,$mon,$year,$yday) = map { sprintf("%02d", $_)  } ($sec,$min,$hour,$mon,$year,$yday);
+           
+			info "$hole->{begin_time}\t${year}y-${mon}m-${yday}d ${hour}h:${min}m:${sec}s\t$hole->{end_time}";
+		}
+	}elsif($arg eq 'files'){
+		my $layer = $flags{layer_id_ms};
+		my $layer_id = db_get_id_by_name('e_arc_layer', $layer, 'layer_id') or abort("Layer with id '$layer' doesnot exists in base");
+	    print "Awalible files for layer '$layer': \n";
+        print "name\t\t\tbegin time          \tend time\n";
+		db_process("select name, begin_time, end_time from e_arc_file where n_arc_layer = $layer_id order by begin_time", sub{
+			info join "\t", @_;
+#			my @row = @_;
+#			blah "$row[0]\t$row[1]\t$row[2]";
+		});
+	}
+	else{
+		my $layer = $flags{layer};
+		if($layer){
+			my $layer_id = db_get_id_by_name('e_arc_layer', $layer, 'layer_id') or abort("Layer with id '$layer' doesnot exists in base");
+			$layer = " and n_arc_layer = $layer_id ";
+		}
+	   info "Awalible layers: ";
+	   info "camp\tbegin time          \tend time          \tlayer_id\t\tdir";
+	   my $camp;
+	   db_process("select (select name from e_campaign where n_campaign = l.n_campaign) as kamp, begin_time, end_time, layer_id, dir from e_arc_layer l where online=true $layer order by kamp, begin_time ;",
+	  	sub {
+	  		my ($c) = @_;
+	  		$_[3] =  sprintf "%-16.0f", $_[3];
+	  		if($c ne $camp ){
+#	  			if( defined $camp){
+		  			info "---\t--------------------\t------------------\t--------\t\t---\n"
+#		  		}
+	  		}else{
+	  			$_[0] = "";
+	  		}
+			info join "\t", @_;
+			$camp = $c;
+		}) ;
+	}
+  end;
+}
+
+sub actionDisconnect($@){
+
+	my ($options, @args) = @_;
+	my %flags = %{$options};
+	
+	my $arg = shift @ARGV;
+	ArcInit( %flags );
+
+	my $disk = '.' unless($arg);
+	my $id = shift @ARGV;
+  
+	if($arg eq 'disk' || $arg eq 'd'){
+		if( $id eq 'all' ){
+			info "disconnecting all disks";
+			my $sth = db_exec('select name from e_arc_disk');
+			while( my ($disk_name) = $sth->fetchrow_array){
+				info "Disconnecting disk '$disk_name'...";
+				disconnect_disk_by_name($disk_name);				
+			}
+		}else{
+			info "Disconnecting disk '$id'...";
+			disconnect_disk_by_name($id);
+		}
+	}elsif($arg eq 'layer' || $arg eq 'l'){
+		info "Disconnecting layer '$id'...";
+		disconnect_layer($id, 1);
+	}else{
+		info "Disconnecting layer '$arg'...";
+		disconnect_layer($arg, 1);
+	}
+	end;
+}
+
+sub actionFormat($@){
+	my ($options, @args) = @_;
+	my %flags = %{$options};
+
+	my $task_dir = shift @args;
+	my $output_file = $task_dir.'/output.txt';
+	my $task_params_ref = read_json( $task_dir.'/task.json' );
+	my ($formatted_file) = format_output($output_file, $task_params_ref);
+	info cat( $formatted_file );
+	end;
+}
+
+sub actionFormatClass($@){
+	my ($options, @args) = @_;
+	my %flags = %{$options};
+	
+	my $task_dir = shift @args;
+	
+	my $class_task = ReadTask($task_dir);
+	$class_task->{params}->{legends} = $legends;
+	my @layer_tasks;
+	for my $layer_task_dir ( glob "$class_task->{dir}/tasks/*" ){
+		push @layer_tasks, ReadTask( $layer_task_dir );
+	}
+	
+	my $format_tasks = ArcVar('format_tasks');
+
+	@layer_tasks = sort { str2time( $a->{params}->{begin_time} ) <=> str2time( $b->{params}->{begin_time} )} @layer_tasks;
+	format_class( $class_task, \@layer_tasks,  $format_tasks);
+	end;
+}
+
+sub actionViewRun($@){
+	warn "deprecated";
+	end;
+	####depr
+	
+	my @pids = get_running_instanses();
+	
+	blah "pid\tpidfile";
+	for (@pids){
+		blah $_->{pid}."\t".$_->{pid_file};
+	}
+	end;
+}
+
+sub actionStop($@){
+	warn "deprecated";
+	end;
+	####depr
+	
+	my $arg = shift;
+	if( !defined($arg) || $arg eq 'all'){
+		my @pids = get_running_instanses();
+		for (@pids){
+			kill_imghort( $_->{pid_file} );
+		}	
+		
+	}else{
+		kill_imghort( $arg );
+	}
+	end;
+	
+}
+
+sub actionRemove($@){
+	my ($options, @args) = @_;
+	my %flags = %{$options};
+		
+	abort("Укажите идентификатор слоя (layer_id)") unless( @args);
+	my $arg = shift @args;
+	
+	if( $arg eq 'camp'){
+		my $camp = shift @args;
+		camp_remove( $camp );
+		info "Удалена кампания $camp";
+		end;
+	}
+	
+	if( $arg eq 'seg' ){
+		my $seg = shift @args;
+        my $arc_home = ArcVar('arc_home');
+		#$seg = abs_path($seg);
+
+		
+        $seg =~ s/$arc_home//;
+		$seg = Misc::rse($seg);
+        my $seg_id = DbDbi::db_select_one("select n_arc_seg from e_arc_seg where dir = '$seg'")
+            or abort("Segment '$seg' not found");
+        seg_remove( $seg_id );
+        info "Удален сегмент $seg";
+		end;
+	}
+	
+    
+	my @layer_ids = ($arg, @args);
+	
+	if($arg eq 'all'){
+		@layer_ids = ();
+		db_process('select layer_id from e_arc_layer', sub(){
+			my @row = @_;
+			push @layer_ids, shift @row;
+		});
+	}
+	
+	
+	for my $layer_id (@layer_ids){
+		$layer_id = sprintf "%.0f\n", $layer_id;
+		layer_remove($layer_id, 0);
+	}
+	end;
+}
+
+sub actionLayerInfo($@){
+	my ($options, @args) = @_;
+	my %flags = %{$options};
+	
+	my $layer_dir = shift @args;
+	gen_layer_info $layer_dir;
+	end;
+}
+
+sub actionCheckAvalibleLayers($@){
+	my ($options, @args) = @_;
+	
+	my $sth_layer = db_exec('select n_arc_layer, dir, descr, layer_id from e_arc_layer where online=true and descr != \'\'');
+	while( my ($n_arc_layer, $dir, $host, $layer_id) = $sth_layer->fetchrow_array ){
+		unless(check_is_layer_online($host, $dir)){
+			info "Found unawalible layer: $layer_id ($dir), settting online to false";
+			db_query("update e_arc_layer set online=false");
+		}
+	}
+				
+	end;
+}
+sub actionConnect($@){
+	my ($options, @args) = @_;
+	my %flags = %{$options};
+	
+	$flags{autogen} = 1;
+	$flags{create_sym_links} = 1;
+	$flags{dialog_say_yes} = 1;
+	
+	$flags{arc_location} = $sun_server if($flags{arc_location} eq 'sun');
+	
+	info join ' ', @args;
+	ArcInit( %flags );
+
+  my $arg = shift @args;
+  
+  
+  $arg = '.' unless($arg);
+  my $dir = shift @args;
+  $dir = '.' unless($dir);
+  
+  if($arg eq 'disk' || $arg eq 'd'){
+	connect_disk($dir);
+  }
+  if($arg eq 'block' || $arg eq 'b'){
+# 	my $disk_dir = shift @ARGV;
+	connect_block($dir);
+  }
+  
+  if($arg eq 'seg' || $arg eq 's'){
+# 	my $disk_dir = shift @ARGV;
+	connect_seg($dir);
+  }
+  
+  if($arg eq 'camp' || $arg eq 'c'){
+# 	my $disk_dir = shift @ARGV;
+	connect_camp($dir);
+  }
+  if($arg eq 'layer' || $arg eq 'l'){
+# 	my $disk_dir = shift @ARGV;
+		print "Connecting layer '$dir'...\n";
+		connect_layer($dir);
+  }
+	if(-d $arg){#Парамер - директория слоя
+		print "Connecting layer '$arg'...\n";
+		connect_layer($arg);
+	}
+	end;
+}
+
+sub read_times_file($;$){
+	my ($file, $range) = @_;
+	
+	my $fd = open_read($file);
+	my @res;
+	while(<$fd>){
+		if( $range ){
+			chomp;
+			next unless($_);
+			my $begin_time = $_;
+			my $end_time = make_time_correction_ymd($begin_time, 0, 0, $range);
+			push @res, {
+				begin_time => $begin_time,
+				end_time => $end_time
+			}
+		}else{
+			next unless( m/(\S+\s\S+)\s(\S+\s\S+)/ );
+			push @res, {
+				begin_time => $1,
+				end_time => $2
+			}
+		}
+		
+	}
+	close $fd;
+	return @res;
+}
+
+sub read_first_col($){
+	my $file = shift;
+	my $fd = open_read($file);
+	my @res;
+	while(<$fd>){
+		my ($v) = split m/\s+/;
+		push @res, $v if($v);
+	}
+	close $fd;
+	return @res;
+}
+
+
+

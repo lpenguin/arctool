@@ -1,0 +1,20 @@
+[
+	{ "name" : "QED", 
+	  "avg_type" : "n",
+	  "format" : "%e",
+	  "index1":"1:7",
+	  "index2":"1:64"
+	},
+	{ "name" : "ZE", 
+	  "avg_type" : "n",
+	  "format" : "%e",
+	  "index1":"1:7",
+	  "index2":"1:64"
+	},
+	{ "name" : "dQED", 
+	  "avg_type" : "n",
+	  "format" : "%e",
+	  "index1":"1:7",
+	  "index2":"1:64"
+	}
+]

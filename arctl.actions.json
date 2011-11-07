@@ -1,0 +1,58 @@
+[{   
+   "name" : "get",
+   "description" : "Get data from archive. Usage: ./arctl get <options> -b='<begin time>' -e='<end time>'",
+   "subr" : "actionGet",
+   "options" : ["step", "t", "passport", "avg", "begin-time", "end-time", "layer-id-ms", "merge-params", "p", "J", "F", "o", "ouput-format", "node-name", "node-type",  "block", "camp", "disk", "close-stdout", "print-relability", "sort-indexes", "suppress-not-found-index-warnings", "remove-bad-output"]
+},
+{   
+   "name" : "connect",
+   "shortName" : "c",
+   "description" : "Connect data. Usage: ./arctl connect <options> disk|block|camp|layer <path>",
+   "subr" : "actionConnect",
+   "options" : ["autogen", "create-sym-links", "L"]
+},
+{   
+   "name" : "disconnect",
+   "shortName" : "d",
+   "description" : "Disconnect data. Usage: ./arctl disconnect disk|layer <disk name or 'all'|layer id>",
+   "subr" : "actionDisconnect"
+},
+{   
+   "name" : "view",
+   "shortName" : "v",
+   "description" : "View information about layers, variables. Usage: ./arctl view",
+   "subr" : "actionView",
+   "options" : ["layer", "block"]
+},
+{   
+   "name" : "usage",
+   "shortName" : "help",
+   "description" : "Print usage. Usage: ./arctl usage|help",
+   "subr" : "actionPrintUsage"
+},{   
+   "name" : "version",
+   "shortName" : "ver",
+   "description" : "Print program version. Usage: ./arctl ver",
+   "subr" : "actionPrintVersion"
+},{   
+   "name" : "remove",
+   "shortName" : "rm",
+   "description" : "Removes object. Usage: ./arctl rm camp|seg|layer <camp name|seg path|layer id>",
+   "subr" : "actionRemove",
+   "options" : ["camp", "seg"]
+},{   
+   "name" : "formatclass",
+   "shortName" : "fc",
+   "description" : "Formatting class task. Usage: ./arctl formatclass <taskdir>",
+   "subr" : "actionFormatClass"
+},{   
+   "name" : "format",
+   "shortName" : "fm",
+   "description" : "Formatting layer task. Usage: ./arctl format <taskdir>",
+   "subr" : "actionFormat"
+},{   
+   "name" : "check-online",
+   "shortName" : "check", 
+   "description" : "Updating information about awalible layers. Usage: ./arctl check-online <taskdir>",
+   "subr" : "actionCheckAvalibleLayers"
+}]

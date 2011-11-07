@@ -1,0 +1,25 @@
+[{
+	 "name" :"Hole",
+	 "descr" :"Skipped seconds before StartTime"
+ },{
+	 "name" :"Min/Max",
+	 "descr" :"n - normal values, d - delta from avg, d% - delta from avg in persents"
+ },{
+	 "name" :"Step",
+	 "descr" :"Extraction step in seconds"
+ },{
+	 "name" :"Step out",
+	 "descr" :"Step averaging in seconds"
+ },{
+	 "name" :"Locale",
+	 "descr" :"Time locale"
+ },{
+	 "name" :"Format",
+	 "descr" :"Default format in c-style"
+ },{
+	 "name" :"Dost_*",
+	 "descr" :"Dostovernost\""
+ },{
+	 "name" :"Time locale",
+	 "descr" :"All times in Greenwich"
+ }]
